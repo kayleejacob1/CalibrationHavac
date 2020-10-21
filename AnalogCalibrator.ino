@@ -112,7 +112,7 @@ void changewifimode() {
     char ssid[33];
     char password[33];
     String ssidss = "ChatterBox"+serial;
-    Serial.println(ssidss);
+    //Serial.println(ssidss);
     String pas = "06082020";
     String ssids = "ChatterBox98F4AB7DBD68h";
     ssidss.toCharArray(ssid, ssidss.length() + 1);
@@ -123,7 +123,7 @@ void changewifimode() {
     {
         delay(1000);
         ////put a kick out and let know no connect
-        Serial.print(".");
+       // Serial.print(".");
         
     }
     wifitestgood = true;
@@ -137,16 +137,16 @@ bool SysCheck() {
     bool test = true;
    uint8_t in = doc["Inputs"].as<uint8_t>();
     float systemp = doc["systemp"].as<float>();
-    if (in == 256) {
-        Serial.printf("00,Inputs,Good\n");
+    if (in > 254) {
+        Serial.printf("55,Inputs,Good,%d\n",in);
     }
     else {
-        Serial.printf("99,Inputs,Bad,%f\n", in);
+        Serial.printf("99,Inputs,Bad,%d\n", in);
 
         test = false;
     }
     if (systemp > 0 && systemp < 260) {
-        Serial.printf("00,systemp,Good\n");
+        Serial.printf("55,systemp,Good,%f\n", systemp);
     }
     else {
         Serial.printf("99,systemp,Bad,%f\n", systemp);
@@ -190,7 +190,7 @@ bool PowerCheck() {
     float pfb = doc["pfb"].as<float>();
     float pfc = doc["pfc"].as<float>();
     if (vol > 0 && vol < 260) {
-        Serial.printf("00,voltage,Good\n");
+        Serial.printf("55,voltage,Good,%f\n", vol);
     }
     else {
         Serial.printf("99,voltage,Bad,%f\n", vol);
@@ -198,7 +198,7 @@ bool PowerCheck() {
         test = false;
     }
     if (cur1 > 0 && cur1 < 100) {
-        Serial.printf("00,cur1,Good\n");
+        Serial.printf("55,cur1,Good,%f\n", cur1);
     }
     else {
         Serial.printf("99,cur1,Bad,%f\n", cur1);
@@ -206,7 +206,7 @@ bool PowerCheck() {
         test = false;
     }
     if (cur2 > 0 && cur2 < 100) {
-        Serial.printf("00,cur2,Good\n");
+        Serial.printf("55,cur2,Good,%f\n", cur2);
     }
     else {
         Serial.printf("99,cur2,Bad,%f\n", cur2);
@@ -214,7 +214,7 @@ bool PowerCheck() {
         test = false;
     }
     if (cur3 > 0 && cur3 < 100) {
-        Serial.printf("00,cur3,Good\n");
+        Serial.printf("55,cur3,Good,%f\n", cur3);
     }
     else {
         Serial.printf("99,cur3,Bad,%f\n", cur3);
@@ -222,39 +222,39 @@ bool PowerCheck() {
         test = false;
     }
     if (cur4 > 0 && cur4 < 100) {
-        Serial.printf("00,cur4,Good\n");
+        Serial.printf("55,cur4,Good,%f\n", cur4);
     }
     else {
         Serial.printf("99,cur4,Bad,%f\n", cur4);
 
         test = false;
     }
-    if (freq > 0 && freq < 100) {
-        Serial.printf("00,freq,Good\n");
+    if (freq > 0 && freq < 1000) {
+        Serial.printf("55,freq,Good,%f\n", freq);
     }
     else {
         Serial.printf("99,freq,Bad,%f\n", freq);
 
         test = false;
     }
-    if (pfa > 0 && pfa < 100) {
-        Serial.printf("00,pfa,Good\n");
+    if (pfa > -1 && pfa < 100) {
+        Serial.printf("55,pfa,Good,%f\n", pfa);
     }
     else {
         Serial.printf("99,pfa,Bad,%f\n", pfa);
 
         test = false;
     }
-    if (pfb > 0 && pfb < 100) {
-        Serial.printf("00,pfb,Good\n");
+    if (pfb > -1 && pfb < 100) {
+        Serial.printf("55,pfb,Good,%f\n", pfb);
     }
     else {
         Serial.printf("99,pfb,Bad,%f\n", pfb);
 
         test = false;
     }
-    if (pfc > 0 && pfc < 100) {
-        Serial.printf("00,pfc,Good\n");
+    if (pfc > -1 && pfc < 100) {
+        Serial.printf("55,pfc,Good,%f\n", pfc);
     }
     else {
         Serial.printf("99,pfc,Bad,%f\n", pfc);
@@ -295,37 +295,42 @@ bool ADCCheck() {
   float lsp = doc["LowSidePres"].as<float>();
   float vol = doc["voltage"].as<float>();
   bool test = true;
-  if (hst > 0 && hst < 100) {
-      Serial.printf("00,HST,Good\n");
+  if (hst > -2 && hst < 0) {
+      Serial.printf("55,HST,Good,%f\n", hst);
+      //Serial.println(hst);
   }
   else {
       Serial.printf("99,HST,Bad,%f\n", hst);
 
       test = false;
   }
-  if(lst > 0 && lst < 100) {
-      Serial.printf("00,LST,Good\n");
+  if(lst > -2 && lst < 0) {
+      Serial.printf("55,LST,Good,%f\n", lst);
+      //Serial.println(lst);
   }
   else {
       Serial.printf("99,LST,Bad,%f\n", lst);
       test = false;
   }
-  if (hsp > 0 && hsp < 100) {
-      Serial.printf("00,HSP,Good\n");
+  if (hsp > 235 && hsp < 240) {
+      Serial.printf("55,HSP,Good,%f\n", hsp);
+      //Serial.println(hsp);
   }
   else {
       Serial.printf("99,HSP,Bad,%f\n", hsp);
       test = false;
   }
-  if (lsp > 0 && lsp < 100) {
-      Serial.printf("00,LSP,Good\n");
+  if (lsp > 235 && lsp < 240) {
+      Serial.printf("55,LSP,Good,%f\n", lsp);
+      //Serial.println(lsp);
   } 
   else {
       Serial.printf("99,LSP,Bad,%f\n", lsp);
       test = false;
   }
-  if (vol > 0 && vol < 100) {
-      Serial.printf("00,Vol,Good\n");
+  if (vol > 8 && vol < 60) {////////////////////////////////////////////////////look at this later
+      Serial.printf("55,Vol,Good,%f\n", vol);
+      //Serial.println(vol);
   }
   else {
       Serial.printf("99,Vol,Bad,%f\n", vol);
@@ -344,7 +349,8 @@ bool getadcdata() {
         ADCData = Hclient.getString();
        // Serial.println(httpCode);
      //   Serial.println(ADCData);
-        return ADCCheck();
+        if (ADCData != "{1}") return ADCCheck();
+        return false;
     }
 
     else {
@@ -433,7 +439,7 @@ void loop() {
                 testfinishedgood = false;
             }
         }
-        SendCalStatus();
+       if(!testfinishedgood) SendCalStatus();
   }
   if(datarecieved)
   {
@@ -456,7 +462,7 @@ void loop() {
             outdatastruct.Command = 10;
             result = esp_now_send(peerInfo.peer_addr, (uint8_t*)&outdatastruct, sizeof(struct_data));
             if (result == ESP_OK);// Serial.println("Sent with success");
-            else Serial.println("99,Error sending the data");
+            else Serial.println("99,Error sending the data1");
         }
         else {
             Serial.println("55,device attached");
@@ -476,12 +482,12 @@ void loop() {
         outdatastruct.Dacvolt = voltage[DACcount];
          result = esp_now_send(peerInfo.peer_addr, (uint8_t*)&outdatastruct, sizeof(struct_data));
          if (result == ESP_OK);//  Serial.println("Sent with success");
-        else Serial.println("99,Error sending the data");
+        else Serial.println("99,Error sending the data2");
     }
     else if (indatastruct.Command == 35) {
         
-       
-        Serial.println("00,Finished onto the next device");
+        dacWrite(25, 125);
+        Serial.println("00,Finish Ana CAL");
         adccalfinished = true;
         SendCalStatus();
         changewifimode();
@@ -495,7 +501,7 @@ void loop() {
         outdatastruct.Dacvolt = voltage[DACcount];
         result = esp_now_send(peerInfo.peer_addr, (uint8_t*)&outdatastruct, sizeof(struct_data));
         if (result == ESP_OK);// Serial.println("Sent with success");
-        else Serial.println("99,Error sending the data");
+        else Serial.println("99,Error sending the data3");
 
       }
     else if(indatastruct.Command ==30){
@@ -504,7 +510,7 @@ void loop() {
         outdatastruct.DAC = indatastruct.DAC;// reset dac
          result = esp_now_send(peerInfo.peer_addr, (uint8_t*)&outdatastruct, sizeof(struct_data));
          if (result == ESP_OK);//  Serial.println("Sent with success");
-        else Serial.println("99,Error sending the data");
+        else Serial.println("99,Error sending the data4");
       }
     else Serial.println("99,unknown command sent back");
   }
