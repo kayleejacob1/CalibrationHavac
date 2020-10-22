@@ -23,6 +23,8 @@ bool sysdonegood = false;
 bool wifitestgood = false;
 bool externali2cgood = false;
 bool adccalfinished = false;
+bool onelast = true;
+int countincomming = 0;
 String Power_cal_vc = "http://192.168.4.1/calgain";
 struct SpiRamAllocator {
     void* allocate(size_t size) {
@@ -58,20 +60,20 @@ typedef struct struct_data {
 struct_data outdatastruct;
 struct_data indatastruct;
 // Create a struct_message called BME280Readings to hold sensor readings
-
+esp_now_peer_info_t peerInfo;
 esp_err_t result;
 bool gotdevice = false;
 void receiveEvent(int howMany) {
     Serial.print("88,");
-    int i = 0;
+     countincomming = 0;
     char ssid[14];
     while (WireSlave.available()) // loop through all but the last byte
     {
        
         char c = WireSlave.read(); 
-        ssid[i] = c;// receive byte as a character
+        ssid[countincomming] = c;// receive byte as a character
         //Serial.print(c);  
-        i++;// print the character
+        countincomming++;// print the character
     }
     ssid[13] = 0;
     serial = String(ssid);
@@ -82,9 +84,15 @@ void receiveEvent(int howMany) {
 
 // called to fill the output buffer
 void requestEvent() {
-    
-    WireSlave.write(253);
-    Serial.println("got i2c request");
+    if (countincomming == 13) {
+        WireSlave.write(253);
+        externali2cgood = true;
+        SendCalStatus();
+    }
+    else {
+        WireSlave.write(1);////////////////////////////////////////////////need to do somthing on otherside
+    }
+    Serial.printf("00,sent back %d bytes\n", countincomming);
 }
 // Callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -141,7 +149,7 @@ bool SysCheck() {
         Serial.printf("55,Inputs,Good,%d\n",in);
     }
     else {
-        Serial.printf("99,Inputs,Bad,%d\n", in);
+        Serial.printf("55,Inputs,Bad,%d\n", in);
 
         test = false;
     }
@@ -149,7 +157,7 @@ bool SysCheck() {
         Serial.printf("55,systemp,Good,%f\n", systemp);
     }
     else {
-        Serial.printf("99,systemp,Bad,%f\n", systemp);
+        Serial.printf("55,systemp,Bad,%f\n", systemp);
 
         test = false;
     }
@@ -193,7 +201,7 @@ bool PowerCheck() {
         Serial.printf("55,voltage,Good,%f\n", vol);
     }
     else {
-        Serial.printf("99,voltage,Bad,%f\n", vol);
+        Serial.printf("55,voltage,Bad,%f\n", vol);
 
         test = false;
     }
@@ -201,7 +209,7 @@ bool PowerCheck() {
         Serial.printf("55,cur1,Good,%f\n", cur1);
     }
     else {
-        Serial.printf("99,cur1,Bad,%f\n", cur1);
+        Serial.printf("55,cur1,Bad,%f\n", cur1);
 
         test = false;
     }
@@ -209,7 +217,7 @@ bool PowerCheck() {
         Serial.printf("55,cur2,Good,%f\n", cur2);
     }
     else {
-        Serial.printf("99,cur2,Bad,%f\n", cur2);
+        Serial.printf("55,cur2,Bad,%f\n", cur2);
 
         test = false;
     }
@@ -217,7 +225,7 @@ bool PowerCheck() {
         Serial.printf("55,cur3,Good,%f\n", cur3);
     }
     else {
-        Serial.printf("99,cur3,Bad,%f\n", cur3);
+        Serial.printf("55,cur3,Bad,%f\n", cur3);
 
         test = false;
     }
@@ -225,7 +233,7 @@ bool PowerCheck() {
         Serial.printf("55,cur4,Good,%f\n", cur4);
     }
     else {
-        Serial.printf("99,cur4,Bad,%f\n", cur4);
+        Serial.printf("55,cur4,Bad,%f\n", cur4);
 
         test = false;
     }
@@ -233,7 +241,7 @@ bool PowerCheck() {
         Serial.printf("55,freq,Good,%f\n", freq);
     }
     else {
-        Serial.printf("99,freq,Bad,%f\n", freq);
+        Serial.printf("55,freq,Bad,%f\n", freq);
 
         test = false;
     }
@@ -241,7 +249,7 @@ bool PowerCheck() {
         Serial.printf("55,pfa,Good,%f\n", pfa);
     }
     else {
-        Serial.printf("99,pfa,Bad,%f\n", pfa);
+        Serial.printf("55,pfa,Bad,%f\n", pfa);
 
         test = false;
     }
@@ -249,7 +257,7 @@ bool PowerCheck() {
         Serial.printf("55,pfb,Good,%f\n", pfb);
     }
     else {
-        Serial.printf("99,pfb,Bad,%f\n", pfb);
+        Serial.printf("55,pfb,Bad,%f\n", pfb);
 
         test = false;
     }
@@ -257,7 +265,7 @@ bool PowerCheck() {
         Serial.printf("55,pfc,Good,%f\n", pfc);
     }
     else {
-        Serial.printf("99,pfc,Bad,%f\n", pfc);
+        Serial.printf("55,pfc,Bad,%f\n", pfc);
 
         test = false;
     }
@@ -300,7 +308,7 @@ bool ADCCheck() {
       //Serial.println(hst);
   }
   else {
-      Serial.printf("99,HST,Bad,%f\n", hst);
+      Serial.printf("55,HST,Bad,%f\n", hst);
 
       test = false;
   }
@@ -309,23 +317,23 @@ bool ADCCheck() {
       //Serial.println(lst);
   }
   else {
-      Serial.printf("99,LST,Bad,%f\n", lst);
+      Serial.printf("55,LST,Bad,%f\n", lst);
       test = false;
   }
-  if (hsp > 235 && hsp < 240) {
+  if (hsp > 230 && hsp < 240) {
       Serial.printf("55,HSP,Good,%f\n", hsp);
       //Serial.println(hsp);
   }
   else {
-      Serial.printf("99,HSP,Bad,%f\n", hsp);
+      Serial.printf("55,HSP,Bad,%f\n", hsp);
       test = false;
   }
-  if (lsp > 235 && lsp < 240) {
+  if (lsp > 230 && lsp < 240) {
       Serial.printf("55,LSP,Good,%f\n", lsp);
       //Serial.println(lsp);
   } 
   else {
-      Serial.printf("99,LSP,Bad,%f\n", lsp);
+      Serial.printf("55,LSP,Bad,%f\n", lsp);
       test = false;
   }
   if (vol > 8 && vol < 60) {////////////////////////////////////////////////////look at this later
@@ -333,7 +341,7 @@ bool ADCCheck() {
       //Serial.println(vol);
   }
   else {
-      Serial.printf("99,Vol,Bad,%f\n", vol);
+      Serial.printf("55,Vol,Bad,%f\n", vol);
       test = false;
   }
   doc.clear();
@@ -365,7 +373,31 @@ void SendCalStatus() {
 
     Serial.printf("22,%d,%d,%d,%d,%d,%d,%d\n",externali2cgood,adccalfinished,wifitestgood,sysdonegood,powerdonegood,adctestdone,testfinishedgood);
 }
-esp_now_peer_info_t peerInfo;
+void Resetfornextdevice() {
+    WiFi.disconnect();
+    esp_now_del_peer(peerInfo.peer_addr);
+    sysdata="";
+    
+   Powerdata="";
+ 
+    ADCData="";
+    gotdevice = false;
+    testfinishedgood = false;
+   adctestdone = false;
+   powerdonegood = false;
+   sysdonegood = false;
+    wifitestgood = false;
+     externali2cgood = false;
+   adccalfinished = false;
+    onelast = true;
+   datarecieved = false;
+    connectedwifi = false;
+    // Variable to store if sending data was successful
+   success="";
+    DACcount = 0;
+     serial = "";
+}
+
 void setup() {
   // Init Serial Monitor
     bool success = WireSlave.begin(SDA_PIN, SCL_PIN, I2C_SLAVE_ADDR);
@@ -402,14 +434,17 @@ void setup() {
 }
  
 void loop() {
-   
+   ///////////////////////////////////////////////////////////////////////////////////////////////start thread to reset if error accurs after 10 seconds no action
   // Send message via ESP-NOW
+    ///////////////////////////////////////we need to be able to send a reset test command to board 
+   // need to do something with the serial number we get from i2c and the gotdevice holder
     if (connectedwifi) {
         delay(500);
         if (!sysdonegood) {
             if (getsysdata()) {
                 sysdonegood = true;
                 testfinishedgood = true;
+                 onelast = true;
             }
             else {
                 sysdonegood = false;
@@ -421,6 +456,7 @@ void loop() {
             if (getpowdata()) {
                 powerdonegood = true;
                 testfinishedgood = true;
+                onelast = true;
             }
             else {
                 powerdonegood = false;
@@ -433,31 +469,38 @@ void loop() {
             if (getadcdata()) {
                 adctestdone = true;
                 testfinishedgood = true;
+                onelast = true;
             }
             else {
                 adctestdone = false;
                 testfinishedgood = false;
             }
         }
-       if(!testfinishedgood) SendCalStatus();
+        if (!testfinishedgood || onelast) {
+            onelast = false;
+            SendCalStatus();
+            if (testfinishedgood)Resetfornextdevice();
+        }
   }
   if(datarecieved)
   {
     datarecieved=false;
+
     //Serial.println ("GotData");
     //Serial.print("Command : ");
-    //Serial.println(indatastruct.Command);
+    Serial.printf("00, command %d\n",indatastruct.Command);
     if (indatastruct.Command == 1) {
         if (!gotdevice) {
             memcpy(peerInfo.peer_addr, indatastruct.broadcastAddress, 6);
             peerInfo.channel = 0;
             peerInfo.encrypt = false;
-            gotdevice = true;
-            // Add peer        
-            if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-                Serial.printf("99,falied to add pier");
+           
+            result = esp_now_add_peer(&peerInfo);
+            if (result != ESP_OK) {
+                Serial.printf("99,falied to add pier %d %02x:%02x:%02x:%02x:%02x:%02x\n ",result, peerInfo.peer_addr[0], peerInfo.peer_addr[1], peerInfo.peer_addr[2], peerInfo.peer_addr[3], peerInfo.peer_addr[4], peerInfo.peer_addr[5]);
                 return;
             }
+            else Serial.printf("00, start with pier  %02x:%02x:%02x:%02x:%02x:%02x \n", peerInfo.peer_addr[0], peerInfo.peer_addr[1], peerInfo.peer_addr[2], peerInfo.peer_addr[3], peerInfo.peer_addr[4], peerInfo.peer_addr[5]);
 
             outdatastruct.Command = 10;
             result = esp_now_send(peerInfo.peer_addr, (uint8_t*)&outdatastruct, sizeof(struct_data));
@@ -473,8 +516,7 @@ void loop() {
     }
     else if(indatastruct.Command ==10){}
     else if (indatastruct.Command == 21) {//star dac auto process
-        externali2cgood = true;
-        SendCalStatus();
+        gotdevice = true;
         DACcount = 0;
         dacWrite(25, DACval[DACcount]);
         outdatastruct.Command = 25;//SET DAC
@@ -482,7 +524,7 @@ void loop() {
         outdatastruct.Dacvolt = voltage[DACcount];
          result = esp_now_send(peerInfo.peer_addr, (uint8_t*)&outdatastruct, sizeof(struct_data));
          if (result == ESP_OK);//  Serial.println("Sent with success");
-        else Serial.println("99,Error sending the data2");
+        else Serial.printf("99,Error sending the 2 data %d %02x:%02x:%02x:%02x:%02x:%02x \n", result, peerInfo.peer_addr[0], peerInfo.peer_addr[1], peerInfo.peer_addr[2], peerInfo.peer_addr[3], peerInfo.peer_addr[4], peerInfo.peer_addr[5]);
     }
     else if (indatastruct.Command == 35) {
         
