@@ -24,6 +24,11 @@ bool wifitestgood = false;
 bool externali2cgood = false;
 bool adccalfinished = false;
 bool onelast = true;
+bool waitpower = false;
+String caldata = "";
+
+int32_t averagerssi = 0;
+uint16_t rssicount = 0;
 int countincomming = 0;
 String Power_cal_vc = "http://192.168.4.1/calgain";
 struct SpiRamAllocator {
@@ -48,7 +53,9 @@ String serial="";
  uint16_t DACval[]={255,254,253,252,250,247,245,240,235,230,220,210,200,175,150,60,40,30,20,11,7,4,3,2,0};
  float voltage[]={3.143,3.130,3.117,3.106,3.084,3.048,3.023,2.963,2.906,2.845,2.727,2.608,2.489,2.195,1.898,0.822,0.585,0.466,0.346,0.241,0.191,0.154,0.145,0.133,0.10};
  uint8_t DACcount = 0;
- 
+ String calvoltage;  //captures first data String
+ String calcurrent;  //captures first data String
+ String calphase;
 //Structure example to send data
 //Must match the receiver structure
 typedef struct struct_data {
@@ -138,26 +145,39 @@ void changewifimode() {
     SendCalStatus();
     Serial.println("00,Connted to device");
     connectedwifi = true;
+   
+    
 }
 bool SysCheck() {
     SpiRamJsonDocument doc(1000);
     deserializeJson(doc, sysdata);///////////////////////////////////////error catch later
     bool test = true;
    uint8_t in = doc["Inputs"].as<uint8_t>();
+
     float systemp = doc["systemp"].as<float>();
     if (in > 254) {
-        Serial.printf("55,Inputs,Good,%d\n",in);
+        Serial.printf("55,Inputs,Pass,%d\n",in);
     }
     else {
-        Serial.printf("55,Inputs,Bad,%d\n", in);
+        Serial.printf("55,Inputs,Fail,%d\n", in);
 
         test = false;
     }
     if (systemp > 0 && systemp < 260) {
-        Serial.printf("55,systemp,Good,%f\n", systemp);
+        Serial.printf("55,systemp,Pass,%f\n", systemp);
     }
     else {
-        Serial.printf("55,systemp,Bad,%f\n", systemp);
+        Serial.printf("55,systemp,Fail,%f\n", systemp);
+
+        test = false;
+    }
+    averagerssi = averagerssi / rssicount;
+   
+    if (averagerssi >-40) {
+        Serial.printf("55,wifi,Pass,%d\n", averagerssi);
+    }
+    else {
+        Serial.printf("55,wifi,Fail,%d\n", averagerssi);
 
         test = false;
     }
@@ -186,6 +206,17 @@ bool getsysdata() {
 bool PowerCheck() {
     SpiRamJsonDocument doc(1000);
     deserializeJson(doc, Powerdata);///////////////////////////////////////error catch later
+    float volts = calvoltage.toFloat();
+    if (volts == 0)volts = 120;
+    float currents = calcurrent.toFloat();
+    if (currents == 0)currents = 4.5;
+    float curhigh = (currents*.02)+currents;
+   
+    float curlow = currents - (currents * .02);
+    float phases = calphase.toFloat();
+    if (phases == 0)phases = .4900;
+    float phasehigh = (phases * .02) + phases;
+    float phaselow = phases - (phases * .02);
     bool test = true;
     float vol = doc["volt"].as<float>();
     float cur1 = doc["cur1"].as<float>();
@@ -197,72 +228,72 @@ bool PowerCheck() {
     float pfa = doc["pfa"].as<float>();
     float pfb = doc["pfb"].as<float>();
     float pfc = doc["pfc"].as<float>();
-    if (vol > 0 && vol < 260) {
-        Serial.printf("55,voltage,Good,%f\n", vol);
+    if (vol > volts-(volts*.02) && vol < volts+(volts*.02)) {///////////with in 2%
+        Serial.printf("55,voltage,Pass,%f\n", vol);
     }
     else {
-        Serial.printf("55,voltage,Bad,%f\n", vol);
+        Serial.printf("55,voltage,Fail,%f\n", vol);
 
         test = false;
     }
-    if (cur1 > 0 && cur1 < 100) {
-        Serial.printf("55,cur1,Good,%f\n", cur1);
+    if (cur1 > curlow && cur1 < curhigh) {
+        Serial.printf("55,cur1,Pass,%f\n", cur1);
     }
     else {
-        Serial.printf("55,cur1,Bad,%f\n", cur1);
+        Serial.printf("55,cur1,Fail,%f\n", cur1);
 
         test = false;
     }
-    if (cur2 > 0 && cur2 < 100) {
-        Serial.printf("55,cur2,Good,%f\n", cur2);
+    if (cur2 > curlow && cur2 < curhigh) {
+        Serial.printf("55,cur2,Pass,%f\n", cur2);
     }
     else {
-        Serial.printf("55,cur2,Bad,%f\n", cur2);
+        Serial.printf("55,cur2,Fail,%f\n", cur2);
 
         test = false;
     }
-    if (cur3 > 0 && cur3 < 100) {
-        Serial.printf("55,cur3,Good,%f\n", cur3);
+    if (cur3 > curlow && cur3 < curhigh) {
+        Serial.printf("55,cur3,Pass,%f\n", cur3);
     }
     else {
-        Serial.printf("55,cur3,Bad,%f\n", cur3);
+        Serial.printf("55,cur3,Fail,%f\n", cur3);
 
         test = false;
     }
-    if (cur4 > 0 && cur4 < 100) {
-        Serial.printf("55,cur4,Good,%f\n", cur4);
+    if (cur4 > curlow && cur4 < curhigh) {
+        Serial.printf("55,cur4,Pass,%f\n", cur4);
     }
     else {
-        Serial.printf("55,cur4,Bad,%f\n", cur4);
+        Serial.printf("55,cur4,Fail,%f\n", cur4);
 
         test = false;
     }
-    if (freq > 0 && freq < 1000) {
-        Serial.printf("55,freq,Good,%f\n", freq);
+    if (freq > 56 && freq < 64) {
+        Serial.printf("55,freq,Pass,%f\n", freq);
     }
     else {
-        Serial.printf("55,freq,Bad,%f\n", freq);
+        Serial.printf("55,freq,Fail,%f\n", freq);
 
         test = false;
     }
-    if (pfa > -1 && pfa < 100) {
-        Serial.printf("55,pfa,Good,%f\n", pfa);
+    if (pfa > phaselow && pfa < phasehigh) {
+        Serial.printf("55,pfa,Pass,%f\n", pfa);
     }
     else {
-        Serial.printf("55,pfa,Bad,%f\n", pfa);
+        Serial.printf("55,pfa,Fail,%f\n", pfa);
 
         test = false;
     }
-    if (pfb > -1 && pfb < 100) {
-        Serial.printf("55,pfb,Good,%f\n", pfb);
+    if (pfb > phaselow && pfb < phasehigh) {
+        Serial.printf("55,pfb,Pass,%f\n", pfb);
     }
     else {
         Serial.printf("55,pfb,Bad,%f\n", pfb);
 
         test = false;
     }
-    if (pfc > -1 && pfc < 100) {
-        Serial.printf("55,pfc,Good,%f\n", pfc);
+    if (pfc > phaselow && pfc < phasehigh) {
+        Serial.printf("55,pfc,Pass,%f\n", pfc);
     }
     else {
         Serial.printf("55,pfc,Bad,%f\n", pfc);
@@ -304,44 +335,44 @@ bool ADCCheck() {
   float vol = doc["voltage"].as<float>();
   bool test = true;
   if (hst > -2 && hst < 0) {
-      Serial.printf("55,HST,Good,%f\n", hst);
+      Serial.printf("55,HST,Pass,%f\n", hst);
       //Serial.println(hst);
   }
   else {
-      Serial.printf("55,HST,Bad,%f\n", hst);
+      Serial.printf("55,HST,Fail,%f\n", hst);
 
       test = false;
   }
   if(lst > -2 && lst < 0) {
-      Serial.printf("55,LST,Good,%f\n", lst);
+      Serial.printf("55,LST,Pass,%f\n", lst);
       //Serial.println(lst);
   }
   else {
-      Serial.printf("55,LST,Bad,%f\n", lst);
+      Serial.printf("55,LST,Fail,%f\n", lst);
       test = false;
   }
   if (hsp > 230 && hsp < 240) {
-      Serial.printf("55,HSP,Good,%f\n", hsp);
+      Serial.printf("55,HSP,Pass,%f\n", hsp);
       //Serial.println(hsp);
   }
   else {
-      Serial.printf("55,HSP,Bad,%f\n", hsp);
+      Serial.printf("55,HSP,Fail,%f\n", hsp);
       test = false;
   }
   if (lsp > 230 && lsp < 240) {
-      Serial.printf("55,LSP,Good,%f\n", lsp);
+      Serial.printf("55,LSP,Pass,%f\n", lsp);
       //Serial.println(lsp);
   } 
   else {
-      Serial.printf("55,LSP,Bad,%f\n", lsp);
+      Serial.printf("55,LSP,Fail,%f\n", lsp);
       test = false;
   }
   if (vol > 8 && vol < 60) {////////////////////////////////////////////////////look at this later
-      Serial.printf("55,Vol,Good,%f\n", vol);
+      Serial.printf("55,Vol,Pass,%f\n", vol);
       //Serial.println(vol);
   }
   else {
-      Serial.printf("55,Vol,Bad,%f\n", vol);
+      Serial.printf("55,Vol,Fail,%f\n", vol);
       test = false;
   }
   doc.clear();
@@ -396,8 +427,51 @@ void Resetfornextdevice() {
    success="";
     DACcount = 0;
      serial = "";
+      averagerssi = 0;
+      rssicount = 0;
+      caldata = "";
+       calvoltage="";  //captures first data String
+       calcurrent="";  //captures first data String
+       calphase="";
+       waitpower = false;
 }
+bool volcurcal() {
+    HTTPClient Hclient;
+    String volcurcalibr = "http://192.168.4.1/calgain?voltmess=" + calvoltage + "&curmess=" + calcurrent;
+    Hclient.begin(volcurcalibr.c_str());
+    int httpCode = Hclient.GET();                                        //Make the request
 
+    if (httpCode == 200) { //Check for the returning code
+        Serial.println("00,Phase Voltage current data sent");
+        return true;
+    }
+
+    else {
+        Serial.printf("Error on HTTP request %d\n", httpCode);
+        return false;
+    }
+
+    if (Hclient.connected())Hclient.end(); //Free the resources
+}
+bool phasecal() {
+    HTTPClient Hclient;
+    String phasecalibr = "http://192.168.4.1/phaseadjust?pfa=" + calphase;
+    Hclient.begin(phasecalibr.c_str());
+    int httpCode = Hclient.GET();                                        //Make the request
+
+    if (httpCode == 200) { //Check for the returning code
+
+        Serial.println("00,Phase Cal data sent");
+        return true;
+    }
+
+    else {
+        Serial.printf("Error on HTTP request %d\n", httpCode);
+        return false;
+    }
+
+    if (Hclient.connected())Hclient.end(); //Free the resources
+}
 void setup() {
   // Init Serial Monitor
     bool success = WireSlave.begin(SDA_PIN, SCL_PIN, I2C_SLAVE_ADDR);
@@ -438,7 +512,30 @@ void loop() {
   // Send message via ESP-NOW
     ///////////////////////////////////////we need to be able to send a reset test command to board 
    // need to do something with the serial number we get from i2c and the gotdevice holder
+    if (Serial.available()) {
+        Serial.println("got ser");
+       
+            caldata = Serial.readString();
+            //Serial.println(caldata);
+           // Serial.println(caldata.substring(0, 2));
+        if (caldata.substring(0, 2) == "88") {
+           // Serial.println("Got Data");
+            uint8_t d1, d2, d3, d4, d5;
+            d1 = caldata.indexOf(',');  //finds location of first ,
+            d2 = caldata.indexOf(',',d1+1);
+            d3 = caldata.indexOf(',', d2 + 1);
+            calvoltage = caldata.substring(d1+1, d2);   //captures first data String
+            calcurrent = caldata.substring(d2 + 1, d3);   //captures first data String
+            calphase = caldata.substring(d3+1);   //captures first data String
+          // Serial.println(calvoltage);
+          // Serial.println(calcurrent);
+          // Serial.println(calphase);
+        }
+    }
+
     if (connectedwifi) {
+         averagerssi += WiFi.RSSI();
+        rssicount++;
         delay(500);
         if (!sysdonegood) {
             if (getsysdata()) {
@@ -459,8 +556,13 @@ void loop() {
                 onelast = true;
             }
             else {
+                if (waitpower)delay(5000);
                 powerdonegood = false;
                 testfinishedgood = false;
+                volcurcal();
+                delay(500);
+                phasecal();
+                waitpower = true;
             }
         }
         delay(1);
